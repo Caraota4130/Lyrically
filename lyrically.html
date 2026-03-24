@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>U</title>
+
+    <style>
+        
+    </style>
+</head>
+<body class="bg-black">
+    <main id="root"></main>
+
+    <!-- Cargar React y ReactDOM desde CDN -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.development.js"></script>
+    <!-- Opcional: Babel para usar JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+
+    <!-- Tu código React -->
+    <script type="text/babel">
+        const LibraryLayout = ({ children }) => (
+            <div className="grid grid-cols-2 gap-4 min-h-screen justify-content-center md:content-center p-15 md:p-5">
+                {children}
+            </div>
+        );
+
+        const VinylCard = ({ image, content }) => (
+            <div className="relative min-w-20 max-w-30 md:max-w-70 justify-self-center md:self-center">
+                <img src={image} alt="aa" />
+                <div className="bg-red-500 w-full p-5">
+                    {content}
+                </div>
+            </div>
+            
+        );
+
+        const songs = [
+            {
+                id: 0,
+                content: 'a',
+                image: 'https://placehold.co/400'
+            },
+            {
+                id: 1,
+                content: 'b',
+                image: 'https://placehold.co/400'
+            }
+        ];
+
+        // Renderizar la aplicación
+        ReactDOM.createRoot(document.getElementById('root')).render(
+            <LibraryLayout>
+                {songs.map((song) => (
+                    <VinylCard key={song.id} content={song.content} image={song.image} />
+                ))}
+            </LibraryLayout>
+        );
+    </script>
+</body>
+</html>
