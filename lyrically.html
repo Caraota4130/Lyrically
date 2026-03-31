@@ -23,12 +23,15 @@
         .modal-overlay {
             position: absolute;
             background-color: rgba(0, 0, 0, 0.5);
-            min-height: 100%;
-            min-width: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 50;
         }
     </style>
 </head>
-<body class="bg-black">
+<body class="bg-linear-to-b from-black from-0% via-black via-70% to-red-800 min-h-screen">
     <main id="root"></main>
 
     <!-- Cargar React y ReactDOM desde CDN -->
@@ -40,106 +43,119 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
     <script type="module">
-        import { Play, Pause, ChevronUp } from 'https://cdn.jsdelivr.net/npm/lucide-react@0.263.1/+esm';
+        import { Play, ArrowRightLeft, ChevronUp } from 'https://cdn.jsdelivr.net/npm/lucide-react@0.263.1/+esm';
         
         window.songs = [
             {
                 id: 0,
-                content: 'Cancion A',
-                image: 'https://i.scdn.co/image/ab67616d0000b273d9194aa18fa4c9362b47464f'
-            },
-            {
-                id: 1,
-                content: 'Canción B',
-                image: 'https://placehold.co/400'
-            },
-            {
-                id: 3,
-                content: 'Canción C',
-                image: 'https://placehold.co/400'
-            },
-            {
-                id: 4,
-                content: 'Canción D',
-                image: 'https://placehold.co/400'
-            },
-            {
-                id: 5,
-                content: 'Canción A',
-                image: 'https://i.scdn.co/image/ab67616d0000b273d9194aa18fa4c9362b47464f'
-            },
-            {
-                id: 6,
-                content: 'Canción B',
-                image: 'https://placehold.co/400'
-            },
-            {
-                id: 7,
-                content: 'Canción C',
-                image: 'https://placehold.co/400'
-            },
-            {
-                id: 8,
-                content: 'Canción D',
-                image: 'https://placehold.co/400'
+                title: 'Cancion A sadasdasd asd  asdas da',
+                cover: 'https://i.scdn.co/image/ab67616d0000b273d9194aa18fa4c9362b47464f',
+                image: 'https://pub-803175937c204bffabd2e383b08a5ef0.r2.dev/src/images/IMG_20260329_132623.jpg',
+                link: 'https://open.spotify.com/track/3CAz01GipLndFoWGYTYFeF?si=fc76d2b59c694f2b',
+                about: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc pellentesque felis urna, vitae rutrum diam fringilla condimentum. Duis laoreet gravida lacus, ut feugiat est tristique quis. Praesent finibus tortor rhoncus tortor luctus, ut cursus ligula congue.'
             },
         ];
         
         // Guardar los iconos en window para usarlos en el script de Babel
-        window.LucideIcons = { Play, Pause, ChevronUp };
+        window.LucideIcons = { Play, ArrowRightLeft, ChevronUp };
     </script>
 
-    <!-- Tu código React -->
     <script type="text/babel">
-        const { createContext, useContext, useState, useCallback } = React;
-
+        const { useState, useEffect, useCallback, memo } = React;
+    
         // Obtener los iconos desde window
-        const { Play, Pause, ChevronUp } = window.LucideIcons;
-
-        const ModalContext = createContext();
-
+        const { Play, ArrowRightLeft, ChevronUp } = window.LucideIcons;
+    
         const LibraryLayout = ({ children }) => {
-            const [modalOpened, setModalState] = useState(false);
-            const [modalData, setModalData] = useState(null);
-
-            const openModal = (data) => {
-                setModalData(data);
-                setModalState(true);
-            };
+            const [modalState, setModalState] = useState({ opened: false, data: null });
+    
+            // useCallback para que openModal y closeModal no cambien entre renders
+            const openModal = useCallback((data) => {
+                setModalState({ opened: true, data: data });
+            }, []);
             
-            const closeModal = () => {
-                setModalState(false);
-                setModalData(null);
-            };
-
+            const closeModal = useCallback(() => {
+                setModalState({ opened: false, data: null });
+            }, []);
+    
             return (
-                <ModalContext.Provider value={{ 
-                    modalOpened, 
-                    setModalState, 
-                    openModal, 
-                    closeModal,
-                    modalData
-                }}>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-y-20 min-h-screen justify-content-center md:content-center p-15 md:p-5 relative">
-                        {children}
-                        {modalOpened && (
-                            <ModalPlayer />
+                <>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-y-20 h-fit md:min-h-screen justify-content-center md:content-center p-15 px-5 md:p-5 md:max-w-screen relative">
+                        {React.Children.map(children, child => 
+                            React.cloneElement(child, { openModal })
                         )}
                     </div>
-                </ModalContext.Provider>
+                    {modalState.opened && (
+                        <ModalPlayer song={modalState.data} onClose={closeModal} />
+                    )}
+                </>
             );
         }
-
-        const ButtonPlayer = ({ song }) => {
-            const { openModal } = useContext(ModalContext);
-
+    
+        // ExternalImage optimizado con cache
+        const imageCache = new Map();
+    
+        const ExternalImage = memo(({ className, src, alt = '' }) => {
+            const [estado, setEstado] = useState(() => {
+                if (imageCache.has(src)) return imageCache.get(src);
+                return 'cargando';
+            });
+    
+            useEffect(() => {
+                if (imageCache.has(src)) {
+                    setEstado(imageCache.get(src));
+                    return;
+                }
+                
+                let mounted = true;
+                const img = new Image();
+                
+                img.onload = () => {
+                    if (mounted) {
+                        imageCache.set(src, 'cargada');
+                        setEstado('cargada');
+                    }
+                };
+                
+                img.onerror = () => {
+                    if (mounted) {
+                        imageCache.set(src, 'error');
+                        setEstado('error');
+                    }
+                };
+                
+                img.src = src;
+                
+                return () => {
+                    mounted = false;
+                    img.onload = null;
+                    img.onerror = null;
+                };
+            }, [src]);
+    
+            if (estado === 'cargando') {
+                return <div className={`${className} bg-gray-800 animate-pulse`} />;
+            }
+    
+            if (estado === 'error') {
+                return (
+                    <div className={`${className} bg-gray-800 flex items-center justify-center`}>
+                        <span className="text-white text-xs">Error</span>
+                    </div>
+                );
+            }
+    
+            return <img className={className} src={src} alt={alt} loading="lazy" />;
+        });
+    
+        const ButtonPlayer = memo(({ song, openModal }) => {
             return (
                 <button 
                     onClick={() => openModal({ ...song })}
-                    className="bg-red-500 w-full p-3 md:p-5 font-bold flex flex-col md:flex-row justify-center md:justify-between items-center rounded-lg md:rounded-full cursor-pointer"
+                    className="bg-red-500 w-full md:w-min mx-auto md:min-w-40 p-3 md:p-5 font-bold flex flex-col md:flex-row justify-center md:justify-between items-center rounded-2xl md:rounded-full cursor-pointer outline-2 outline-offset-2 outline-red-500"
                 >
-                    <div className="overflow-hidden text-nowrap text-ellipsis hover:underline w-full md:w-[50%]">
-                        {song.content}
+                    <div className="overflow-hidden text-nowrap text-ellipsis hover:underline w-[75%] md:w-1/2">
+                        {song.title}
                     </div>
                     
                     <Play
@@ -149,55 +165,95 @@
                         fill="white"
                     />
                 </button>
-            )
-        };
+            );
+        });
 
-        const VinylCard = ({ song }) => (
-            <div className="vinyl-card relative min-w-20 max-w-30 md:max-w-70 justify-self-center md:self-center hover:scale-120 transition text-white">
-                <div className="rounded-full aspect-square flex justify-center items-center p-5 md:p-20 bg-white mb-2 vinyl-spinning">
-                    <img className="rounded-full aspect-square h-12 md:h-30" src={song.image} />
-                </div>
-                <ButtonPlayer song={song} />
-            </div>
-        );
-
-        const Player = ({ image, title }) => (
-            <div className="grid grid-rows-2 md:grid-rows-1 grid-cols-auto md:grid-cols-2">
-                <div className="flex flex-col gap-4 justify-center items-center">
-                    <img className="rounded-lg shadow-black shadow-lg h-50 aspect-square" 
-                        src={ image }
-                        alt={ title }
+        // VinylCard memoizado
+        const VinylCard = memo(({ song, openModal }) => (
+            <div className="vinyl-card relative hover:scale-105 transition text-white flex flex-col justify-center items-center">
+                <div className="rounded-full aspect-square bg-neutral-800 mb-3 vinyl-spinning h-fit w-fit p-10 md:p-20">
+                    <ExternalImage 
+                        className="rounded-full aspect-square h-12 md:h-20"
+                        src={song.cover}
+                        alt={song.title}
                     />
-                    <h1 className="font-bold">{ title }</h1>
                 </div>
-                <div>
+                <ButtonPlayer song={song} openModal={openModal} />
+            </div>
+        ));
+    
+        const Cover = memo(({ cover, image }) => {
+        const [isHovered, setIsHovered] = useState(false);
+
+        const handleToggle = useCallback(() => {
+            setIsHovered(prev => !prev);
+        }, []);
+
+        return (
+            <div className="relative w-48 md:w-64 lg:w-80 mx-auto">
+                {/* Contenedor de la imagen - todo el área es clickeable */}
+                <div 
+                    onClick={handleToggle}
+                    className="relative cursor-pointer"
+                >
+                    <ExternalImage 
+                        className="rounded-lg shadow-black shadow-lg w-full aspect-square object-cover"
+                        src={isHovered ? image : cover}
+                        alt="Cover"
+                    />
                     
+                    {/* Botón flotante abajo a la izquierda */}
+                    <div className="absolute bottom-2 left-2 md:bottom-3 md:left-3">
+                        <span className="bg-white/90 hover:bg-gray-300  backdrop-blur-sm p-1.5 md:p-2 rounded-full shadow-lg flex items-center justify-center">
+                            <ArrowRightLeft 
+                                className="stroke-2 text-gray-800"
+                                size={16}
+                                strokeWidth={2}
+                            />
+                        </span>
+                    </div>
                 </div>
             </div>
         );
-
-        const ModalPlayer = () => {
-            const { modalData: song, closeModal } = useContext(ModalContext);
-
+});
+    
+        const SongInfo = memo(({ about, link }) => (
+            <div className="flex flex-col justify-center items-center gap-4 md:max-w-100 ">
+                <div>
+                    <h1 className="font-bold">¿Qué me recuerda a ti?</h1>
+                    <p className="px-5">{ about }</p>
+                </div>
+                <a href={link} target="_blank" rel="noopener noreferrer" className="text-white font-bold bg-green-600 p-3 rounded-lg w-fit hover:bg-green-700 transition">
+                    Escuchar en Spotify
+                </a>
+            </div>
+        ));
+    
+        const Player = memo(({ song }) => (
+            <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex flex-col gap-4 justify-center items-center">
+                    <Cover cover={song.cover} image={song.image} />
+                    <h1 className="font-bold">{song.title}</h1>
+                </div>
+                <SongInfo about={song.about} link={song.link} />
+            </div>
+        ));
+    
+        const ModalPlayer = memo(({ song, onClose }) => {
             return (
-                <div className="modal-overlay flex justify-center md:items-center px-18 py-10 md:p-30">
-                    <div className="modal-content h-fit shadow-xl outline outline-2 outline-offset-2 outline-red-500 bg-red-500 p-5 rounded-2xl flex flex-col gap-2 text-white">
-                        <Player
-                            image={ song.image }
-                            title={ song.content }
-                        />
-                        <button className="modal-close max-h-5 flex justify-center items-center" onClick={closeModal}>
-                            <ChevronUp 
-                                className="stroke-4"
-                                size={20}
-                                color="white"
-                            />
-                        </button>
+                <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto">
+                    <div className="min-h-screen flex justify-center md:items-center px-18 py-10 md:p-30">
+                        <div className="modal-content h-fit shadow-xl outline-2 outline-offset-2 outline-red-500 bg-red-500 p-5 rounded-2xl flex flex-col gap-2 text-white">
+                            <Player song={song} />
+                            <button className="modal-close max-h-5 p-4 mx-10 flex justify-center items-center hover:bg-red-700 rounded-xl" onClick={onClose}>
+                                <ChevronUp className="stroke-4" size={20} color="white" />
+                            </button>
+                        </div>
                     </div>
                 </div>
             );
-        }
-
+        });
+    
         // Renderizar la aplicación
         ReactDOM.createRoot(document.getElementById('root')).render(
             <LibraryLayout>
